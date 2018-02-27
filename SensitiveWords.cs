@@ -213,7 +213,6 @@ namespace SlamDunk
 		{
             TextAsset t = Resources.Load<TextAsset>("Config/SensitiveWords");
             string s = Encoding.UTF8.GetString(t.bytes);
-            Debug.Log(s);
             InitSensitiveWords(s);
             LuaDataAgent.GlobalData.ReplaceSensitiveWordsToStarFunction = OutputCheckOutWords;
 		}
@@ -223,7 +222,6 @@ namespace SlamDunk
             string res = "";
             if (input != null)
             {
-                Debug.Log("input is not null" + input);
                 res = FilterSensitiveWords(input);
             }
 			return res;
