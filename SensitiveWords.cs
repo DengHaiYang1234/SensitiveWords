@@ -66,65 +66,71 @@ namespace SlamDunk
         private WordNode rootWordNode = null;
         private bool isInit = false;  
 
-        public void InitSensitiveWords(string words) 
+        public void InitSensitiveWords(string words)   //获取屏蔽词，并添加至项目所需的屏蔽词库
         {
             string[] wordArr = words.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
             this.allSensitiveWords.Clear(); 
             for (int index = 0; index < wordArr.Length; ++index)
-            {
+            { 
                 this.allSensitiveWords.Add(wordArr[index]); 
             }
             BuildWordTree();
             this.isInit = true;  
         }
 
-        private void BuildWordTree()
+        private void BuildWordTree()  //建立屏蔽词库
         {
             if (null == this.rootWordNode)
             {
-                this.rootWordNode = new WordNode("R"); 
+                this.rootWordNode = new WordNode("R");   //复位word
             }
             this.rootWordNode.Reset("R"); 
             for (int index = 0; index < this.allSensitiveWords.Count; ++index) 
             {
-                string strTmp = this.allSensitiveWords[index]; 
+                string strTmp = this.allSensitiveWords[index];
+                //Debug.Log("allSensitiveWords[index]:" + strTmp);
                 if (strTmp.Length > 0)
                 {
-                    InsertNode(this.rootWordNode, strTmp); 
+                    InsertNode(this.rootWordNode, strTmp); //检测每个屏蔽词
                 }
             }
         }
 
-        private void InsertNode(WordNode node, string content)
+        private void InsertNode(WordNode node, string content)   //检测每个屏蔽词
         {
-            if (null == node)
+            //Debug.Log("InsertNode InsertNode InsertNode InsertNode InsertNode InsertNode InsertNode InsertNode InsertNode InsertNode");
+            if (null == node)  //正常情况node不会为空
             {
-                Debug.Log("the root node is null");
+                Debug.Log("the root node is null! the root node is null! the root node is null! the root node is null! the root node is null! the root node is null!");
                 return;
             }
-            string strTmp = content.Substring(0, 1); 
-            WordNode wordNode = FindNode(node, strTmp);
-            if (null == wordNode)
+            string strTmp = content.Substring(0, 1);   //从第一个字符串开始截取
+            WordNode wordNode = FindNode(node, strTmp); //获取该屏蔽词的node（是否已被标记）
+            if (null == wordNode)  //若该屏蔽词没有被标记过，那么就从该词的第一个字符开始
             {
+                //Debug.Log("wordNode is null !!!!   wordNode is null !!!!   wordNode is null !!!!   wordNode is null !!!!" + strTmp.ToString());
                 wordNode = new WordNode(strTmp);
-                node.wordNodes[strTmp] = wordNode;
+                node.wordNodes[strTmp] = wordNode;  //标记该字符
             }
 
-            strTmp = content.Substring(1); 
-            if (string.IsNullOrEmpty(strTmp))  
+            strTmp = content.Substring(1);  //依次往后顺序标记
+            if (string.IsNullOrEmpty(strTmp))   //若已经到了该屏蔽词的最后一个字符，那么这个屏蔽词标记完毕
             {
+                //Debug.Log("wordNode.endTag is 1 !!!!   wordNode.endTag is 1 !!!!   wordNode.endTag is 1 !!!!   wordNode.endTag is 1 !!!!" + strTmp.ToString());
                 wordNode.endTag = 1;  
             }
-            else
+            else //若不是最后一个字符，那么继续递归
             {
+                //Debug.Log("else   else  else  else  else  else  else  else  else  else else" + strTmp.ToString());
                 InsertNode(wordNode, strTmp); 
             }
         }
 
-        private WordNode FindNode(WordNode node, string content) 
+        private WordNode FindNode(WordNode node, string content)  //判断该字符是否已被标记，若没有被标记，返回null；若已经被标记，就返回wordNode或null
         {
             if (null == node)
             {
+                Debug.Log("node is null !!!!   node is null !!!!   node is null !!!!   node is null !!!!");
                 return null;
             }
 
@@ -142,17 +148,16 @@ namespace SlamDunk
 
             string originalValue = content;
             content = content.ToLower();
-
             WordNode node = this.rootWordNode;
             StringBuilder buffer = new StringBuilder();
             List<string> badLst = new List<string>();
             int a = 0;
             while (a < content.Length)
             {
-                string contnetTmp = content.Substring(a);
-                string strTmp = contnetTmp.Substring(0, 1);
-                node = FindNode(node, strTmp);
-                if (null == node)
+                string contnetTmp = content.Substring(a);  //截取依次输入的字符串
+                string strTmp = contnetTmp.Substring(0, 1); //截取第一个字符
+                node = FindNode(node, strTmp); //获取该字符的node
+                if (null == node)  //若该字符没有被标记，即不是敏感词,添加在字符至buffer
                 {
                     node = this.rootWordNode;
                     a = a - badLst.Count;
@@ -167,7 +172,7 @@ namespace SlamDunk
                         buffer.Append(beginContent[0]);
                     }
                 }
-                else if (node.endTag == 1)
+                else if (node.endTag == 1)  //该字符是敏感词，那么就用*代替
                 {
                     badLst.Add(strTmp);
                     for (int index = 0; index < badLst.Count; ++index)
@@ -177,7 +182,7 @@ namespace SlamDunk
                     node = this.rootWordNode;
                     badLst.Clear();
                 }
-                else
+                else  
                 {
                     badLst.Add(strTmp);
                     if (a == content.Length - 1)
@@ -196,7 +201,7 @@ namespace SlamDunk
             string newValue = buffer.ToString();
             if (0 != newValue.CompareTo(originalValue.ToLower()))
             {
-                int idx = newValue.IndexOf('*');
+                int idx = newValue.IndexOf('*');  //查找*所在的索引值
                 char[] originalArr = originalValue.ToCharArray();
                 while (idx != -1)
                 {
