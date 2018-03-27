@@ -14,7 +14,94 @@ using UnityEngine;
 
 namespace SlamDunk
 {
-    sealed class WordNode
+    public struct WordNodeKeyValue   //构造函数
+    {
+        public string key;
+        public WordNode value;
+    }
+
+
+    public sealed class WordNodeMap
+    {
+        public WordNodeKeyValue[] wordNodes = null; 
+
+        public WordNode this[string key]
+        {
+            get                                      // 属性get访问器，取值；
+            {
+                if (wordNodes == null)
+                {
+                    return null;
+                }
+
+                for (var i = 0; i < wordNodes.Length; ++i)
+                {
+                    if (wordNodes[i].key == key)
+                    {
+                        return wordNodes[i].value;
+                    }
+                }
+
+                return null;
+            }
+
+            set                                         //属性set访问器，设置值。
+            {
+                if (wordNodes == null)
+                {
+                    wordNodes = new WordNodeKeyValue[1];
+                    wordNodes[0] = new WordNodeKeyValue() {key = key, value = value};  //初始化
+                }
+
+                else
+                {
+                    var needAdd = true;
+                    for (var i = 0; i < wordNodes.Length; ++i)
+                    {
+                        if (wordNodes[i].key == key)//设置wordNodes【i】的value值；前提是key值都相同；
+                        {
+                            wordNodes[i].value = value;                     
+                            needAdd = false;
+                        }
+                    }
+
+                    if (needAdd)        //若key值不同，那么就添加进去
+                    {
+                        var newWordNodes = new WordNodeKeyValue[wordNodes.Length + 1];  //新建newWordNodes，并开辟一个wordNodes.Length + 1长度的空间；
+                        Array.Copy(wordNodes, newWordNodes, wordNodes.Length);//拷贝wordNodes数组数据至newWordNodes数组。长度为wordNodes.Length
+                        newWordNodes[wordNodes.Length] = new WordNodeKeyValue() {key = key,value = value};
+                        wordNodes = newWordNodes;
+                    }
+                }
+            }
+        }
+
+
+        public bool TryGetValue(string key, out WordNode value)
+        {
+            value = null;
+            if (wordNodes == null)
+            {
+                return false;
+            }
+            for (var i = 0; i < wordNodes.Length; ++i)
+            {
+                if (wordNodes[i].key == key)
+                {
+                    value = wordNodes[i].value;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        public void Clear()
+        {
+            wordNodes = null;
+        }
+    }
+
+    public sealed class WordNode   //sealed:阻止其他类继承此类
     {
         public WordNode(string word)
         {
@@ -34,8 +121,9 @@ namespace SlamDunk
         }
 
         public string word; 
-        public int endTag;  
-        public Dictionary<string, WordNode> wordNodes = new Dictionary<string, WordNode>();
+        public int endTag;
+        public WordNodeMap wordNodes = new WordNodeMap();
+        //public Dictionary<string, WordNode> wordNodes = new Dictionary<string, WordNode>();
     }
 
     public class SensitiveWords
@@ -69,12 +157,14 @@ namespace SlamDunk
         public void InitSensitiveWords(string words)   //获取屏蔽词，并添加至项目所需的屏蔽词库
         {
             string[] wordArr = words.Split(new char[] { '|' }, StringSplitOptions.RemoveEmptyEntries);
-            this.allSensitiveWords.Clear(); 
+            this.allSensitiveWords.Clear();
+            this.allSensitiveWords.Capacity = wordArr.Length;
             for (int index = 0; index < wordArr.Length; ++index)
             { 
                 this.allSensitiveWords.Add(wordArr[index]); 
             }
             BuildWordTree();
+            this.allSensitiveWords.Clear();
             this.isInit = true;  
         }
 
@@ -108,7 +198,7 @@ namespace SlamDunk
             WordNode wordNode = FindNode(node, strTmp); //获取该屏蔽词的node（是否已被标记）
             if (null == wordNode)  //若该屏蔽词没有被标记过，那么就从该词的第一个字符开始
             {
-                //Debug.Log("wordNode is null !!!!   wordNode is null !!!!   wordNode is null !!!!   wordNode is null !!!!" + strTmp.ToString());
+                //Debug.Log("wordNode is null !!!!   wordNode is null !!!!   wordNode is null !!!!   wordNode is null !!!!" + strTmp);
                 wordNode = new WordNode(strTmp);
                 node.wordNodes[strTmp] = wordNode;  //标记该字符
             }
@@ -116,12 +206,12 @@ namespace SlamDunk
             strTmp = content.Substring(1);  //依次往后顺序标记
             if (string.IsNullOrEmpty(strTmp))   //若已经到了该屏蔽词的最后一个字符，那么这个屏蔽词标记完毕
             {
-                //Debug.Log("wordNode.endTag is 1 !!!!   wordNode.endTag is 1 !!!!   wordNode.endTag is 1 !!!!   wordNode.endTag is 1 !!!!" + strTmp.ToString());
+                //Debug.Log("wordNode.endTag is 1 !!!!   wordNode.endTag is 1 !!!!   wordNode.endTag is 1 !!!!   wordNode.endTag is 1 !!!!" + strTmp);
                 wordNode.endTag = 1;  
             }
             else //若不是最后一个字符，那么继续递归
             {
-                //Debug.Log("else   else  else  else  else  else  else  else  else  else else" + strTmp.ToString());
+                //Debug.Log("else   else  else  else  else  else  else  else  else  else else" + strTmp);
                 InsertNode(wordNode, strTmp); 
             }
         }
